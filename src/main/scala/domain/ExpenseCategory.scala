@@ -1,4 +1,5 @@
 package ru.rurik
+package domain
 
 object ExpenseCategory extends Enumeration {
   type ExpenseCategory = Value
@@ -7,11 +8,3 @@ object ExpenseCategory extends Enumeration {
   val Services = Value("услуги")
   val Other = Value("прочее")
 }
-
-import ExpenseCategory.ExpenseCategory
-
-case class Expense(id: Option[Long] = None,
-                   name: String,
-                   category: ExpenseCategory,
-                   amount: Long,
-                   parentId: Option[Long] = None)
