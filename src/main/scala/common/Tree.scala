@@ -1,5 +1,5 @@
-package ru.rurik.domain
-
+package ru.rurik
+package common
 
 import cats.{Eval, Foldable}
 

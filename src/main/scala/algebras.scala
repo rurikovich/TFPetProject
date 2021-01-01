@@ -1,18 +1,13 @@
 package ru.rurik
 
-import domain.{Expense, ExpenseCategory, ExpenseTree, Tree}
+import domain.ExpenseCategory.ExpenseCategory
+import domain.{Expense, ExpenseCategory, ExpenseTree, User}
 
-import cats.{Applicative, Traverse}
-import ru.rurik.Starter.expenseTree
-import ru.rurik.domain.ExpenseCategory.ExpenseCategory
+import cats.Applicative
+import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
 
-import scala.util.chaining.scalaUtilChainingOps
-//import interpreters.ExpenseRepoOptionInMemory.{getById, getByParentId}
 
-import cats.Functor
-import cats.implicits.catsSyntaxOptionId
 
-import scala.collection.mutable
 
 
 object algebras {
@@ -27,9 +22,31 @@ object algebras {
     def apply[F[_] : ExpenseRepo]: ExpenseRepo[F] = implicitly
   }
 
-  def getById[F[_] : ExpenseRepo](id: Long): F[Expense] = ExpenseRepo[F].getById(id)
 
-  def getByParentId[F[_] : ExpenseRepo](id: Long): F[List[Expense]] = ExpenseRepo[F].getByParentId(id)
+
+
+  trait UserExpenseRepo[F[_]] {
+    def getUserExpenses: F[List[User]]
+  }
+
+  object UserExpenseRepo {
+    def apply[F[_] : UserExpenseRepo]: UserExpenseRepo[F] = implicitly
+  }
+
+
+  trait UserRepo[F[_]] {
+    def getAll: F[List[User]]
+  }
+
+  object UserRepo {
+    def apply[F[_] : UserRepo]: UserRepo[F] = implicitly
+  }
+
+  def getExpenseById[F[_] : ExpenseRepo](id: Long): F[Expense] = ExpenseRepo[F].getById(id)
+
+  def getExpenseByParentId[F[_] : ExpenseRepo](id: Long): F[List[Expense]] = ExpenseRepo[F].getByParentId(id)
+
+  def getAllUsers[F[_] : UserRepo]: F[List[User]] = UserRepo[F].getAll
 
   trait Program[F[_]] {
 
@@ -70,7 +87,7 @@ object interpreters {
 
   implicit object ExpenseRepoOptionInMemory extends ExpenseRepo[Option] {
 
-    val expenses: mutable.Map[Long, Expense] = mutable.Map(
+    val expenses: Map[Long, Expense] = Map(
       1L -> Expense(1, "exp1", ExpenseCategory.Food, 100),
       2L -> Expense(2, "exp1", ExpenseCategory.Appliances, 100, 1L.some)
     )
@@ -88,30 +105,5 @@ object interpreters {
     override def fold[A, B, C](fa: Option[A], first: B => C, second: A => C): C =
       fa.fold(first(UnknownError.asInstanceOf[B]))(second(_))
   }
-
-}
-
-
-object Starter extends App {
-
-  import algebras._
-
-
-  def expenseTree[F[_] : Applicative : Program : ExpenseRepo](id: Long): F[ExpenseTree] =
-    for {
-      expense <- getById(id)
-      subExpenses <- getByParentId(id)
-      expenseTreeList <- {
-        import cats.implicits._
-        subExpenses.map(exp => expenseTree[F](exp.id)).sequence
-      }
-    } yield ExpenseTree(expense, Some(expenseTreeList))
-
-
-  import interpreters._
-
-  val maybeTree: Option[ExpenseTree] = expenseTree[Option](1)
-
-  println(maybeTree)
 
 }
