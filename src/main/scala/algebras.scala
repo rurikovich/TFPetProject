@@ -1,9 +1,12 @@
 package ru.rurik
 
-import domain.{Expense, ExpenseTree}
+import domain.{Expense, ExpenseCategory, ExpenseTree, Tree}
 
 import cats.{Applicative, Traverse}
 import ru.rurik.Starter.expenseTree
+import ru.rurik.domain.ExpenseCategory.ExpenseCategory
+
+import scala.util.chaining.scalaUtilChainingOps
 //import interpreters.ExpenseRepoOptionInMemory.{getById, getByParentId}
 
 import cats.Functor
@@ -18,14 +21,6 @@ object algebras {
     def getById(id: Long): F[Expense]
 
     def getByParentId(id: Long): F[List[Expense]]
-
-    def create(expense: Expense): F[Expense]
-
-    def update(expense: Expense): F[Expense]
-
-    def delete(id: Long): F[Expense]
-
-    def delete(ids: List[Long]): F[List[Expense]]
   }
 
   object ExpenseRepo {
@@ -35,14 +30,6 @@ object algebras {
   def getById[F[_] : ExpenseRepo](id: Long): F[Expense] = ExpenseRepo[F].getById(id)
 
   def getByParentId[F[_] : ExpenseRepo](id: Long): F[List[Expense]] = ExpenseRepo[F].getByParentId(id)
-
-  def create[F[_] : ExpenseRepo](expense: Expense): F[Expense] = ExpenseRepo[F].create(expense)
-
-  def update[F[_] : ExpenseRepo](expense: Expense): F[Expense] = ExpenseRepo[F].update(expense)
-
-  def delete[F[_] : ExpenseRepo](id: Long): F[Expense] = ExpenseRepo[F].delete(id)
-
-  def delete[F[_] : ExpenseRepo](ids: List[Long]): F[List[Expense]] = ExpenseRepo[F].delete(ids)
 
   trait Program[F[_]] {
 
@@ -71,30 +58,35 @@ object algebras {
 
 object interpreters {
 
+  sealed trait AppError extends Throwable {
+    def message: String
+  }
+
+  case object UnknownError extends AppError {
+    override def message: String = s"Unexpected Error"
+  }
+
   import algebras._
 
-  object ExpenseRepoOptionInMemory extends ExpenseRepo[Option] {
+  implicit object ExpenseRepoOptionInMemory extends ExpenseRepo[Option] {
 
-    val expenses = mutable.Map.empty[Long, Expense]
+    val expenses: mutable.Map[Long, Expense] = mutable.Map(
+      1L -> Expense(1, "exp1", ExpenseCategory.Food, 100),
+      2L -> Expense(2, "exp1", ExpenseCategory.Appliances, 100, 1L.some)
+    )
 
     override def getById(id: Long): Option[Expense] = expenses.get(id)
 
     override def getByParentId(id: Long): Option[List[Expense]] = expenses.values.filter(_.parentId.exists(_ == id)).toList.some
+  }
 
-    override def create(expense: Expense): Option[Expense] = expenses.put(expense.id, expense)
+  implicit object ProgramOption extends Program[Option] {
+    override def flatMap[A, B](fa: Option[A], afb: A => Option[B]): Option[B] = fa.flatMap(afb)
 
-    override def update(expense: Expense): Option[Expense] = expenses.put(expense.id, expense)
+    override def map[A, B](fa: Option[A], ab: A => B): Option[B] = fa.map(ab)
 
-    override def delete(id: Long): Option[Expense] = expenses.remove(id)
-
-    override def delete(ids: List[Long]): Option[List[Expense]] = {
-      import cats.instances.list._
-      import cats.instances.option._
-      import cats.syntax.traverse._
-
-      ids.map(expenses.remove).sequence
-    }
-
+    override def fold[A, B, C](fa: Option[A], first: B => C, second: A => C): C =
+      fa.fold(first(UnknownError.asInstanceOf[B]))(second(_))
   }
 
 }
@@ -103,6 +95,7 @@ object interpreters {
 object Starter extends App {
 
   import algebras._
+
 
   def expenseTree[F[_] : Applicative : Program : ExpenseRepo](id: Long): F[ExpenseTree] =
     for {
@@ -115,6 +108,10 @@ object Starter extends App {
     } yield ExpenseTree(expense, Some(expenseTreeList))
 
 
-  def expenseTable[F[_] : ExpenseRepo](expenseId: Long): Map[String, Double] = ???
+  import interpreters._
+
+  val maybeTree: Option[ExpenseTree] = expenseTree[Option](1)
+
+  println(maybeTree)
 
 }
