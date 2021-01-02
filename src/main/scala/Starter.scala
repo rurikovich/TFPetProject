@@ -4,11 +4,12 @@ import domain.ExpenseCategory.ExpenseCategory
 import domain.{ExpenseTree, User}
 
 import cats.Applicative
+import cats.implicits.toTraverseOps
 
 object Starter extends App {
 
   import algebras._
-
+  import algebrasExt._
 
   def expenseTree[F[_] : Applicative : Program : ExpenseRepo](id: Long): F[ExpenseTree] =
     for {
@@ -21,22 +22,25 @@ object Starter extends App {
     } yield ExpenseTree(expense, Some(expenseTreeList))
 
 
-  def userExpenseMaxStatistics[F[_] : Program : UserRepo : ExpenseRepo](): F[Map[ExpenseCategory, User]] = {
-
+  def userStats[F[_] : Applicative : Program : ExpenseRepo : UserRepo : ExpenseStatsRepo](): F[List[(User, Map[ExpenseCategory, Long])]] =
     for {
       users <- getAllUsers
+      stats <- users.map { u =>
+        for {
+          expenses <- getUserExpenses(u.id)
+          categoryAmount <- amountsByCategory(expenses)
+        } yield (u, categoryAmount)
+      }.sequence
+    } yield stats
 
 
-    } yield Map.empty[ExpenseCategory, User]
+  import interpreters._
+  val expenseTree: Option[ExpenseTree] = expenseTree[Option](1)
+  println(expenseTree)
 
 
-  }
-
-  import  interpreters._
-
-
-  val maybeTree: Option[ExpenseTree] = expenseTree[Option](1)
-
-  println(maybeTree)
+  import interpreterExt._
+  val stats = userStats[Option]()
+  println(stats)
 
 }

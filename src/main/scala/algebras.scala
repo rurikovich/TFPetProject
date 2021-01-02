@@ -1,14 +1,8 @@
 package ru.rurik
 
-import domain.ExpenseCategory.ExpenseCategory
-import domain.{Expense, ExpenseCategory, ExpenseTree, User}
+import domain.{Expense, ExpenseCategory}
 
-import cats.Applicative
-import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
-
-
-
-
+import cats.implicits.catsSyntaxOptionId
 
 object algebras {
 
@@ -16,6 +10,9 @@ object algebras {
     def getById(id: Long): F[Expense]
 
     def getByParentId(id: Long): F[List[Expense]]
+
+    def getUserExpenses(userId: Long): F[List[Expense]]
+
   }
 
   object ExpenseRepo {
@@ -23,30 +20,11 @@ object algebras {
   }
 
 
-
-
-  trait UserExpenseRepo[F[_]] {
-    def getUserExpenses: F[List[User]]
-  }
-
-  object UserExpenseRepo {
-    def apply[F[_] : UserExpenseRepo]: UserExpenseRepo[F] = implicitly
-  }
-
-
-  trait UserRepo[F[_]] {
-    def getAll: F[List[User]]
-  }
-
-  object UserRepo {
-    def apply[F[_] : UserRepo]: UserRepo[F] = implicitly
-  }
-
   def getExpenseById[F[_] : ExpenseRepo](id: Long): F[Expense] = ExpenseRepo[F].getById(id)
 
   def getExpenseByParentId[F[_] : ExpenseRepo](id: Long): F[List[Expense]] = ExpenseRepo[F].getByParentId(id)
 
-  def getAllUsers[F[_] : UserRepo]: F[List[User]] = UserRepo[F].getAll
+  def getUserExpenses[F[_] : ExpenseRepo](userId: Long): F[List[Expense]] = ExpenseRepo[F].getUserExpenses(userId)
 
   trait Program[F[_]] {
 
@@ -88,13 +66,19 @@ object interpreters {
   implicit object ExpenseRepoOptionInMemory extends ExpenseRepo[Option] {
 
     val expenses: Map[Long, Expense] = Map(
-      1L -> Expense(1, "exp1", ExpenseCategory.Food, 100),
-      2L -> Expense(2, "exp1", ExpenseCategory.Appliances, 100, 1L.some)
+      1L -> Expense(id = 1, name = "exp1", category = ExpenseCategory.Food, amount = 100, userId = 1L.some),
+      2L -> Expense(2, "exp2", ExpenseCategory.Appliances, 100, 1L.some, userId = 1L.some),
+      3L -> Expense(3, "exp3", ExpenseCategory.Appliances, 99, 1L.some, userId = 1L.some)
     )
 
     override def getById(id: Long): Option[Expense] = expenses.get(id)
 
-    override def getByParentId(id: Long): Option[List[Expense]] = expenses.values.filter(_.parentId.exists(_ == id)).toList.some
+    override def getByParentId(id: Long): Option[List[Expense]] =
+      expenses.values.filter(_.parentId.exists(_ == id)).toList.some
+
+    override def getUserExpenses(userId: Long): Option[List[Expense]] =
+      expenses.values.filter(_.userId.contains(userId)).toList.some
+
   }
 
   implicit object ProgramOption extends Program[Option] {
