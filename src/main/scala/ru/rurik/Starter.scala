@@ -1,9 +1,8 @@
 package ru.rurik
 
-import domain.ExpenseCategory.ExpenseCategory
-import domain.{ExpenseTree, User}
-
 import cats.Applicative
+import ru.rurik.domain.ExpenseCategory.ExpenseCategory
+import ru.rurik.domain.{ExpenseTree, User}
 import cats.implicits.toTraverseOps
 
 object Starter extends App {

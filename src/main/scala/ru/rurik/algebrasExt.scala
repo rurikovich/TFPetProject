@@ -1,8 +1,8 @@
 package ru.rurik
 
-import algebrasExt.{ExpenseStatsRepo, UserRepo}
-import domain.ExpenseCategory.ExpenseCategory
-import domain.{Expense, ExpenseCategory, User}
+import ru.rurik.algebrasExt.{ExpenseStatsRepo, UserRepo}
+import ru.rurik.domain.ExpenseCategory.ExpenseCategory
+import ru.rurik.domain.{Expense, User}
 
 object algebrasExt {
 
@@ -32,6 +32,8 @@ object algebrasExt {
   def amountsByCategory[F[_] : ExpenseStatsRepo](expenses: List[Expense]): F[Map[ExpenseCategory, Long]] = ExpenseStatsRepo[F].amountsByCategory(expenses)
 
 }
+
+
 
 
 object interpreterExt {

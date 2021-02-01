@@ -1,5 +1,4 @@
-package ru.rurik
-package common
+package ru.rurik.common
 
 import cats.{Eval, Foldable}
 
