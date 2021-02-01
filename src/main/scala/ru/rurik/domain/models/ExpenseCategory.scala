@@ -1,4 +1,4 @@
-package ru.rurik.domain
+package ru.rurik.domain.models
 
 object ExpenseCategory extends Enumeration {
   type ExpenseCategory = Value

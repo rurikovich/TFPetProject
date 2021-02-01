@@ -1,6 +1,6 @@
-package ru.rurik.domain
+package ru.rurik.domain.models
 
-import ru.rurik.domain.ExpenseCategory.ExpenseCategory
+import ru.rurik.domain.models.ExpenseCategory.ExpenseCategory
 
 case class Expense(id: Long,
                    name: String,
