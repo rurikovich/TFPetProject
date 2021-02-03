@@ -1,29 +1,24 @@
 package ru.rurik.domain.algebras
 
+import cats.tagless.finalAlg
 import ru.rurik.domain.models.ExpenseCategory.ExpenseCategory
 import ru.rurik.domain.models.{Expense, User}
 
+import scala.language.higherKinds
+
 object algebrasExt {
 
+  @finalAlg
   trait ExpenseStatsRepo[F[_]] {
 
     def amountsByCategory(expenses: List[Expense]): F[Map[ExpenseCategory, Long]]
 
   }
 
-  object ExpenseStatsRepo {
-    def apply[F[_] : ExpenseStatsRepo]: ExpenseStatsRepo[F] = implicitly
-  }
-
-
+  @finalAlg
   trait UserRepo[F[_]] {
     def getAll: F[List[User]]
   }
-
-  object UserRepo {
-    def apply[F[_] : UserRepo]: UserRepo[F] = implicitly
-  }
-
 
   def getAllUsers[F[_] : UserRepo]: F[List[User]] = UserRepo[F].getAll
 

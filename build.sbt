@@ -2,16 +2,13 @@ name := "TFPetProject"
 
 version := "0.1"
 
-scalaVersion := "2.13.4"
 
-idePackagePrefix := Some("ru.rurik")
+scalaVersion := "2.12.8"
 
 
 libraryDependencies +=
   "org.typelevel" %% "cats-tagless-macros" % "0.12" //latest version indicated in the badge above
 
-// https://mvnrepository.com/artifact/org.typelevel/cats-core
-libraryDependencies += "org.typelevel" %% "cats-core" % "2.3.1"
 
 
 
@@ -28,3 +25,5 @@ libraryDependencies ++= {
     case _ => compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full) :: Nil
   }
 }
+
+//addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.9")
